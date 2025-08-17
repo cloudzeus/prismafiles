@@ -13,8 +13,8 @@ export default async function DashboardPage() {
     redirect("/auth/signin")
   }
 
-  const isAdmin = hasRole(user, "ADMINISTRATOR")
-  const isManager = hasRole(user, "MANAGER") || isAdmin
+  const isAdmin = hasRole(user.role, "ADMINISTRATOR")
+  const isManager = hasRole(user.role, "MANAGER") || isAdmin
 
   return (
     <div className="min-h-screen bg-gray-50">

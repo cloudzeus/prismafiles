@@ -7,7 +7,7 @@ import { Shield, Users, Settings, Database, Activity, Lock } from "lucide-react"
 export default async function AdminPage() {
   const user = await getCurrentUser()
   
-  if (!user || !hasRole(user, "ADMINISTRATOR")) {
+  if (!user || !hasRole(user.role, "ADMINISTRATOR")) {
     redirect("/dashboard")
   }
 
