@@ -73,8 +73,8 @@ export default function EditDepartmentModal({
     name: "",
     description: "",
     email: "",
-    managerId: "",
-    parentId: ""
+    managerId: "none",
+    parentId: "none"
   })
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -85,8 +85,8 @@ export default function EditDepartmentModal({
         name: department.name || "",
         description: department.description || "",
         email: department.email || "",
-        managerId: department.managerId || "",
-        parentId: department.parentId || ""
+        managerId: department.managerId || "none",
+        parentId: department.parentId || "none"
       })
       setErrors({})
     }
@@ -131,8 +131,8 @@ export default function EditDepartmentModal({
           name: formData.name.trim(),
           description: formData.description.trim() || null,
           email: formData.email.trim() || null,
-          managerId: formData.managerId || null,
-          parentId: formData.parentId || null,
+          managerId: formData.managerId === "none" ? null : formData.managerId,
+          parentId: formData.parentId === "none" ? null : formData.parentId,
         }),
       })
 
@@ -215,7 +215,7 @@ export default function EditDepartmentModal({
                 <SelectValue placeholder="Select a manager" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No Manager</SelectItem>
+                <SelectItem value="none">No Manager</SelectItem>
                 {users.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.name || user.email}
@@ -232,7 +232,7 @@ export default function EditDepartmentModal({
                 <SelectValue placeholder="Select a parent department" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No Parent Department</SelectItem>
+                <SelectItem value="none">No Parent Department</SelectItem>
                 {departments
                   .filter(dept => dept.id !== department?.id) // Exclude current department
                   .map((dept) => (

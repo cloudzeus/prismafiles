@@ -47,11 +47,15 @@ export async function POST(request: NextRequest) {
       throw new Error(`Upload failed: ${response.status} - ${errorText}`);
     }
 
+    // Construct the CDN URL
+    const cdnUrl = `https://${storageZone}.b-cdn.net/${fullPath}`;
+    
     return NextResponse.json({
       success: true,
       message: 'File uploaded successfully',
       fileName: file.name,
       path: fullPath,
+      cdnUrl: cdnUrl,
       size: file.size,
     });
 

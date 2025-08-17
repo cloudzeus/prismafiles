@@ -1,5 +1,6 @@
 import { cookies } from "next/headers"
 import { jwtVerify } from "jose"
+import { prisma } from "./prisma"
 
 const JWT_SECRET = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || "fallback-secret")
 
@@ -8,6 +9,7 @@ export interface AuthUser {
   email: string
   name?: string | null
   role: string
+  image?: string | null
 }
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
@@ -25,7 +27,8 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
       id: payload.id as string,
       email: payload.email as string,
       name: payload.name as string | null,
-      role: payload.role as string
+      role: payload.role as string,
+      image: payload.image as string | null
     }
   } catch (error) {
     return null
@@ -62,4 +65,25 @@ export function requireRole(userRole: string, requiredRole: string): boolean {
   }
   
   return true
+}
+
+export async function getFreshUserData(userId: string) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        image: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    })
+    return user
+  } catch (error) {
+    console.error('Error fetching fresh user data:', error)
+    return null
+  }
 }

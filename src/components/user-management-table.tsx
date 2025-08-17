@@ -19,6 +19,7 @@ interface User {
   city: string | null;
   zip: string | null;
   country: string | null;
+  image: string | null;
   createdAt?: string;
   userDepartments: Array<{
     id: string;
@@ -194,7 +195,7 @@ export default function UserManagementTable() {
                     </Button>
                     
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src="" alt={user.name || user.email} />
+                      <AvatarImage src={user.image || undefined} alt={user.name || user.email} />
                       <AvatarFallback className="bg-blue-600 text-white text-sm">
                         {getUserInitials(user.name, user.email)}
                       </AvatarFallback>

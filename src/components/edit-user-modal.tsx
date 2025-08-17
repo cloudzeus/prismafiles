@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { X, Check, Plus } from "lucide-react";
+import { X, Check, Plus, Upload, User, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface User {
   id: string;
@@ -22,6 +23,7 @@ interface User {
   city: string | null;
   zip: string | null;
   country: string | null;
+  image: string | null;
   userDepartments: Array<{
     id: string;
     jobPosition: string;
@@ -83,7 +85,8 @@ export default function EditUserModal({ user, open, onOpenChange, onUserUpdated 
     address: user.address || '',
     city: user.city || '',
     zip: user.zip || '',
-    country: user.country || ''
+    country: user.country || '',
+    image: user.image || ''
   });
 
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -101,6 +104,7 @@ export default function EditUserModal({ user, open, onOpenChange, onUserUpdated 
   })));
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [newDepartmentRole, setNewDepartmentRole] = useState({
     departmentId: '',
     roleId: '',
@@ -108,12 +112,35 @@ export default function EditUserModal({ user, open, onOpenChange, onUserUpdated 
     isManager: false
   });
 
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(user.image);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (open) {
       fetchDepartments();
       fetchDepartmentRoles();
+      setAvatarPreview(user.image);
+      setSelectedFile(null);
     }
-  }, [open]);
+  }, [open, user.image]);
+
+  // Update form data when user changes
+  useEffect(() => {
+    setFormData({
+      name: user.name || '',
+      email: user.email,
+      role: user.role,
+      phone: user.phone || '',
+      mobile: user.mobile || '',
+      extension: user.extension || '',
+      address: user.address || '',
+      city: user.city || '',
+      zip: user.zip || '',
+      country: user.country || '',
+      image: user.image || ''
+    });
+  }, [user]);
 
   const fetchDepartments = async () => {
     try {
@@ -146,6 +173,71 @@ export default function EditUserModal({ user, open, onOpenChange, onUserUpdated 
     }));
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be less than 5MB');
+        return;
+      }
+
+      setSelectedFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setAvatarPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadAvatar = async (): Promise<string | null> => {
+    if (!selectedFile) return formData.image;
+
+    setIsUploading(true);
+    try {
+      const formDataUpload = new FormData();
+      formDataUpload.append('file', selectedFile);
+      formDataUpload.append('path', 'avatars');
+
+      const response = await fetch('/api/cdn/upload', {
+        method: 'POST',
+        body: formDataUpload,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Upload failed');
+      }
+
+      const result = await response.json();
+      const cdnUrl = result.cdnUrl;
+      
+      toast.success('Avatar uploaded successfully!');
+      return cdnUrl;
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload avatar');
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeAvatar = () => {
+    setSelectedFile(null);
+    setAvatarPreview(null);
+    setFormData(prev => ({ ...prev, image: '' }));
+  };
+
   const addDepartmentRole = () => {
     if (newDepartmentRole.departmentId && newDepartmentRole.jobPosition) {
       setSelectedDepartments(prev => [...prev, { ...newDepartmentRole }]);
@@ -173,21 +265,53 @@ export default function EditUserModal({ user, open, onOpenChange, onUserUpdated 
     setIsLoading(true);
 
     try {
+      // Upload avatar first if there's a new file
+      let avatarUrl: string | null = formData.image;
+      if (selectedFile) {
+        const uploadedUrl = await uploadAvatar();
+        if (!uploadedUrl) {
+          setIsLoading(false);
+          return;
+        }
+        avatarUrl = uploadedUrl;
+      }
+
+      // Debug: Log what we're sending to the API
+      const requestBody = {
+        ...formData,
+        image: avatarUrl,
+        userDepartments: selectedDepartments
+      };
+      console.log('Form data state before submission:', formData);
+      console.log('Sending to API:', requestBody);
+      
       const response = await fetch(`/api/users/${user.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          userDepartments: selectedDepartments
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
         const updatedUser = await response.json();
-        onUserUpdated(updatedUser.user);
+        
+        // Refresh user data to get the latest information
+        try {
+          const refreshResponse = await fetch('/api/users/me');
+          if (refreshResponse.ok) {
+            const freshData = await refreshResponse.json();
+            onUserUpdated(freshData.user);
+          } else {
+            onUserUpdated(updatedUser.user);
+          }
+        } catch (refreshError) {
+          console.error('Error refreshing user data:', refreshError);
+          onUserUpdated(updatedUser.user);
+        }
+        
         toast.success('User updated successfully!');
+        onOpenChange(false);
       } else {
         const error = await response.json();
         toast.error(error.message || 'Failed to update user');
@@ -198,6 +322,13 @@ export default function EditUserModal({ user, open, onOpenChange, onUserUpdated 
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getInitials = (name: string | null, email: string) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return email.slice(0, 2).toUpperCase();
   };
 
   return (
@@ -211,6 +342,72 @@ export default function EditUserModal({ user, open, onOpenChange, onUserUpdated 
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Avatar Section */}
+          <div className="flex items-center gap-6 p-4 bg-gray-50 rounded-lg">
+            <div className="flex flex-col items-center gap-3">
+              <Avatar className="h-24 w-24">
+                <AvatarImage src={avatarPreview || undefined} alt={user.name || user.email} />
+                <AvatarFallback className="text-2xl bg-blue-100 text-blue-600">
+                  {getInitials(user.name, user.email)}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="flex items-center gap-2"
+                >
+                  {isUploading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  {isUploading ? 'Uploading...' : 'Upload'}
+                </Button>
+                
+                {avatarPreview && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={removeAvatar}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              
+              <p className="text-xs text-gray-500 text-center">
+                JPG, PNG, GIF up to 5MB
+              </p>
+            </div>
+            
+            <div className="flex-1">
+              <h3 className="font-medium text-gray-900 mb-2">Profile Picture</h3>
+              <p className="text-sm text-gray-600">
+                Upload a profile picture for this user. The image will be automatically resized and optimized.
+              </p>
+              {selectedFile && (
+                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-700">
+                  <strong>Selected:</strong> {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -464,8 +661,15 @@ export default function EditUserModal({ user, open, onOpenChange, onUserUpdated 
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Updating...' : 'Update User'}
+            <Button type="submit" disabled={isLoading || isUploading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update User'
+              )}
             </Button>
           </div>
         </form>

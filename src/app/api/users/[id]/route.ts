@@ -26,20 +26,28 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    // Debug: Log what we received
+    console.log('API received body:', body);
+
     // Update user basic information
+    const updateData = {
+      name: body.name,
+      role: body.role,
+      phone: body.phone,
+      mobile: body.mobile,
+      extension: body.extension,
+      address: body.address,
+      city: body.city,
+      zip: body.zip,
+      country: body.country,
+      image: body.image || null,
+    };
+    
+    console.log('Updating user with data:', updateData);
+    
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: {
-        name: body.name,
-        role: body.role,
-        phone: body.phone,
-        mobile: body.mobile,
-        extension: body.extension,
-        address: body.address,
-        city: body.city,
-        zip: body.zip,
-        country: body.country,
-      },
+      data: updateData,
     });
 
     // Handle department assignments if provided
