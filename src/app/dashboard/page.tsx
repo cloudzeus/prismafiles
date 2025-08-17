@@ -1,10 +1,14 @@
 import { getCurrentUser, hasRole } from "@/lib/auth-utils"
 import { redirect } from "next/navigation"
-import { Logo } from "@/components/ui/logo"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, Users, Settings, User, ArrowRight } from "lucide-react"
-import UserDropdown from "@/components/user-dropdown"
+import { Shield, Users, Settings, User, ArrowRight, BarChart3, PieChart, Activity } from "lucide-react"
+import DashboardLayout from "@/components/dashboard-layout"
+import RedisStatusCheck from "@/components/redis-status-check"
+import FileTypesPieChart from "@/components/charts/file-types-pie-chart"
+import ScannedDocumentsRadialChart from "@/components/charts/scanned-documents-radial-chart"
+import WeeklyUploadsBarChart from "@/components/charts/monthly-uploads-bar-chart"
+import DeletedFilesBarChart from "@/components/charts/deleted-files-bar-chart"
+import GenerateFoldersButton from "@/components/generate-folders-button"
 
 export default async function DashboardPage() {
   const user = await getCurrentUser()
@@ -17,32 +21,79 @@ export default async function DashboardPage() {
   const isManager = hasRole(user.role, "MANAGER") || isAdmin
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header - 100% width */}
-      <header className="w-full bg-white shadow-sm border-b">
-        <div className="px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <Logo size="lg" />
-            
-            {/* User Avatar with Dropdown */}
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-gray-600 hidden sm:block">
-                Welcome, {user.name || user.email}
-              </span>
-              
-              <UserDropdown user={user} />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+    <DashboardLayout user={user}>
+      <div className="space-y-8">
+        <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-2">
-            Welcome to your G-FILES dashboard
-          </p>
+          <p className="text-gray-600 mt-2">Welcome to your G-FILES dashboard</p>
+          <RedisStatusCheck />
+        </div>
+
+        {/* Chart Cards Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* File Types Pie Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <PieChart className="h-5 w-5 text-blue-600" />
+                File Types Distribution
+              </CardTitle>
+              <CardDescription>Types of files stored in BunnyCDN</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] flex items-center justify-center">
+                <FileTypesPieChart />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Scanned Documents Radial Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-green-600" />
+                Scanned Documents
+              </CardTitle>
+              <CardDescription>Document scanning progress and status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] flex items-center justify-center">
+                <ScannedDocumentsRadialChart />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Weekly Uploads Bar Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-purple-600" />
+                Weekly Uploads
+              </CardTitle>
+              <CardDescription>Daily uploads over the current week</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] flex items-center justify-center">
+                <WeeklyUploadsBarChart />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Deleted Files Bar Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-red-600" />
+                Deleted Files
+              </CardTitle>
+              <CardDescription>Number of deleted files over time</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px] flex items-center justify-center">
+                <DeletedFilesBarChart />
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Role-based Content */}
@@ -71,12 +122,16 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Button variant="outline" size="sm" className="w-full justify-start">
+                <button className="w-full text-left px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                   View Files
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
+                </button>
+                <button className="w-full text-left px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                   Upload Files
-                </Button>
+                </button>
+                <a href="/users/profile" className="w-full text-left px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  View Profile
+                </a>
+                {isAdmin && <GenerateFoldersButton />}
               </div>
             </CardContent>
           </Card>
@@ -132,10 +187,10 @@ export default async function DashboardPage() {
                   <CardDescription>Manage all users and their roles</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full">
+                  <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     Manage Users
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
+                    <ArrowRight className="h-4 w-4 ml-2 inline" />
+                  </button>
                 </CardContent>
               </Card>
 
@@ -148,10 +203,10 @@ export default async function DashboardPage() {
                   <CardDescription>Configure system-wide settings</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full">
+                  <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     Configure System
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
+                    <ArrowRight className="h-4 w-4 ml-2 inline" />
+                  </button>
                 </CardContent>
               </Card>
 
@@ -164,10 +219,10 @@ export default async function DashboardPage() {
                   <CardDescription>Define and manage user roles</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full">
+                  <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     Manage Roles
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
+                    <ArrowRight className="h-4 w-4 ml-2 inline" />
+                  </button>
                 </CardContent>
               </Card>
             </div>
@@ -187,10 +242,10 @@ export default async function DashboardPage() {
                   <CardDescription>View and manage your team</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full">
+                  <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     View Team
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
+                    <ArrowRight className="h-4 w-4 ml-2 inline" />
+                  </button>
                 </CardContent>
               </Card>
 
@@ -203,10 +258,10 @@ export default async function DashboardPage() {
                   <CardDescription>Manage team projects and tasks</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full">
+                  <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     Manage Projects
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
+                    <ArrowRight className="h-4 w-4 ml-2 inline" />
+                  </button>
                 </CardContent>
               </Card>
             </div>
@@ -227,10 +282,10 @@ export default async function DashboardPage() {
                   <CardDescription>View and manage your assigned tasks</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full">
+                  <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     View Tasks
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
+                    <ArrowRight className="h-4 w-4 ml-2 inline" />
+                  </button>
                 </CardContent>
               </Card>
 
@@ -243,16 +298,16 @@ export default async function DashboardPage() {
                   <CardDescription>Access and manage your files</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full">
+                  <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     Manage Files
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
+                    <ArrowRight className="h-4 w-4 ml-2 inline" />
+                  </button>
                 </CardContent>
               </Card>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   )
 }

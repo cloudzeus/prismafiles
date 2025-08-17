@@ -29,11 +29,27 @@ model User {
   role          UserRole  @default(EMPLOYEE)
   emailVerified DateTime?
   image         String?
+  
+  // Contact Information
+  phone         String?   // Office phone number
+  mobile        String?   // Mobile phone number
+  extension     String?   // Phone extension
+  
+  // Address Information
+  address       String?   // Street address
+  city          String?   // City
+  zip           String?   // ZIP/Postal code
+  country       String?   // Country
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   accounts Account[]
   sessions Session[]
+  userDepartments UserDepartment[]
+  
+  // Department management relationships
+  managedDepartments Department[] @relation("DepartmentManager")
 
   @@map("users")
 }
@@ -75,4 +91,62 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+model Department {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  email       String?   // Department email
+  managerId   String?   // ID of the department manager
+  parentId    String?   // ID of the parent department (for hierarchical structure)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Self-referencing relationship for parent/child departments
+  parent   Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children Department[] @relation("DepartmentHierarchy")
+  
+  // Department manager relationship
+  manager User? @relation("DepartmentManager", fields: [managerId], references: [id])
+  
+  // Users in this department
+  userDepartments UserDepartment[]
+  
+  // Available roles in this department
+  departmentRoles DepartmentRole[]
+
+  @@map("departments")
+}
+
+model UserDepartment {
+  id           String     @id @default(cuid())
+  userId       String
+  departmentId String
+  jobPosition  String     // Job position/role within the department
+  isManager    Boolean    @default(false) // Whether this user is a manager in this department
+  joinedAt     DateTime   @default(now())
+  leftAt       DateTime?  // When the user left the department (null = still active)
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, departmentId, jobPosition]) // User can have multiple positions in same department
+  @@map("user_departments")
+}
+
+model DepartmentRole {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Software Engineer", "Marketing Specialist", "Team Lead"
+  description String?  // Description of the role
+  departmentId String  // Which department this role belongs to
+  level       Int      @default(1) // Seniority level (1 = Junior, 2 = Mid, 3 = Senior, 4 = Lead, 5 = Manager)
+  isActive    Boolean  @default(true) // Whether this role is currently active
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  department Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@unique([departmentId, name]) // Role names must be unique within a department
+  @@map("department_roles")
 }

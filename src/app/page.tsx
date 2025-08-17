@@ -4,11 +4,11 @@ import { Logo } from "@/components/ui/logo"
 
 export default function Home() {
   const navbarItems = [
-    { name: "Home", href: "/" },
     { name: "Features", href: "#features" },
-    { name: "Security", href: "#security" },
     { name: "GDPR", href: "#gdpr" },
     { name: "Components", href: "/components" },
+    { name: "CDN Browser", href: "/cdn-browser" },
+    { name: "Redis Test", href: "/redis-test" },
     { name: "Login", href: "/auth/signin" },
   ]
 

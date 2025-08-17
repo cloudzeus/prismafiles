@@ -16,15 +16,29 @@ import LicenseModal from "./license-modal";
 
 interface UserDropdownProps {
   user: {
+    id: string;
     name?: string | null;
     email: string;
-    image?: string | null;
     role: string;
-  };
+    image?: string | null;
+  } | null | undefined;
 }
 
 export default function UserDropdown({ user }: UserDropdownProps) {
   const [licenseModalOpen, setLicenseModalOpen] = useState(false);
+
+  // Handle case where user is undefined or null
+  if (!user || !user.email) {
+    return (
+      <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 hover:bg-gray-100">
+        <Avatar className="h-10 w-10">
+          <AvatarFallback className="bg-gray-600 text-white font-semibold text-lg">
+            U
+          </AvatarFallback>
+        </Avatar>
+      </Button>
+    );
+  }
 
   // Get user initials for avatar fallback
   const getUserInitials = (name?: string | null, email?: string) => {
@@ -46,7 +60,7 @@ export default function UserDropdown({ user }: UserDropdownProps) {
           <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 hover:bg-gray-100">
             <Avatar className="h-10 w-10">
               {user.image ? (
-                <AvatarImage src={user.image} alt={user.name || user.email} />
+                <AvatarImage src={user.image} alt={user.name || user.email || 'User'} />
               ) : (
                 <AvatarFallback className="bg-green-600 text-white font-semibold text-lg">
                   {userInitials}
@@ -62,7 +76,7 @@ export default function UserDropdown({ user }: UserDropdownProps) {
             <div className="flex flex-col space-y-1">
               <p className="text-sm font-medium leading-none">{user.name || 'User'}</p>
               <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-              <p className="text-xs leading-none text-muted-foreground capitalize">{user.role}</p>
+              <p className="text-xs leading-none text-muted-foreground capitalize">{user.role || 'User'}</p>
             </div>
           </DropdownMenuLabel>
           

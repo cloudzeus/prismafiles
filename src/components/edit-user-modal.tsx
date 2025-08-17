@@ -1,0 +1,475 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { X, Check, Plus } from "lucide-react";
+import { toast } from "sonner";
+
+interface User {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
+  phone: string | null;
+  mobile: string | null;
+  extension: string | null;
+  address: string | null;
+  city: string | null;
+  zip: string | null;
+  country: string | null;
+  userDepartments: Array<{
+    id: string;
+    jobPosition: string;
+    isManager: boolean;
+    department: {
+      id: string;
+      name: string;
+      description: string | null;
+    };
+  }>;
+}
+
+interface Department {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+interface DepartmentRole {
+  id: string;
+  name: string;
+  description: string | null;
+  level: number;
+}
+
+interface EditUserModalProps {
+  user: User;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUserUpdated: (user: User) => void;
+}
+
+// Common countries list
+const COUNTRIES = [
+  'USA', 'Canada', 'UK', 'Germany', 'France', 'Italy', 'Spain', 'Netherlands',
+  'Belgium', 'Switzerland', 'Austria', 'Sweden', 'Norway', 'Denmark', 'Finland',
+  'Poland', 'Czech Republic', 'Hungary', 'Slovakia', 'Slovenia', 'Croatia',
+  'Serbia', 'Bulgaria', 'Romania', 'Greece', 'Turkey', 'Ukraine', 'Russia',
+  'Japan', 'China', 'South Korea', 'India', 'Australia', 'New Zealand',
+  'Brazil', 'Argentina', 'Chile', 'Mexico', 'South Africa', 'Egypt', 'Nigeria'
+];
+
+// User roles
+const USER_ROLES = [
+  { value: 'ADMINISTRATOR', label: 'Administrator' },
+  { value: 'MANAGER', label: 'Manager' },
+  { value: 'EMPLOYEE', label: 'Employee' },
+  { value: 'COLLABORATOR', label: 'Collaborator' }
+];
+
+export default function EditUserModal({ user, open, onOpenChange, onUserUpdated }: EditUserModalProps) {
+  const [formData, setFormData] = useState({
+    name: user.name || '',
+    email: user.email,
+    role: user.role,
+    phone: user.phone || '',
+    mobile: user.mobile || '',
+    extension: user.extension || '',
+    address: user.address || '',
+    city: user.city || '',
+    zip: user.zip || '',
+    country: user.country || ''
+  });
+
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departmentRoles, setDepartmentRoles] = useState<DepartmentRole[]>([]);
+  const [selectedDepartments, setSelectedDepartments] = useState<Array<{
+    departmentId: string;
+    roleId: string;
+    jobPosition: string;
+    isManager: boolean;
+  }>>(user.userDepartments.map(ud => ({
+    departmentId: ud.department.id,
+    roleId: '', // We'll need to map this from department roles
+    jobPosition: ud.jobPosition,
+    isManager: ud.isManager
+  })));
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [newDepartmentRole, setNewDepartmentRole] = useState({
+    departmentId: '',
+    roleId: '',
+    jobPosition: '',
+    isManager: false
+  });
+
+  useEffect(() => {
+    if (open) {
+      fetchDepartments();
+      fetchDepartmentRoles();
+    }
+  }, [open]);
+
+  const fetchDepartments = async () => {
+    try {
+      const response = await fetch('/api/departments');
+      if (response.ok) {
+        const data = await response.json();
+        setDepartments(data.departments);
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+    }
+  };
+
+  const fetchDepartmentRoles = async () => {
+    try {
+      const response = await fetch('/api/department-roles');
+      if (response.ok) {
+        const data = await response.json();
+        setDepartmentRoles(data.roles);
+      }
+    } catch (error) {
+      console.error('Error fetching department roles:', error);
+    }
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const addDepartmentRole = () => {
+    if (newDepartmentRole.departmentId && newDepartmentRole.jobPosition) {
+      setSelectedDepartments(prev => [...prev, { ...newDepartmentRole }]);
+      setNewDepartmentRole({
+        departmentId: '',
+        roleId: '',
+        jobPosition: '',
+        isManager: false
+      });
+    }
+  };
+
+  const removeDepartmentRole = (index: number) => {
+    setSelectedDepartments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateDepartmentRole = (index: number, field: string, value: any) => {
+    setSelectedDepartments(prev => prev.map((item, i) => 
+      i === index ? { ...item, [field]: value } : item
+    ));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          userDepartments: selectedDepartments
+        }),
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        onUserUpdated(updatedUser.user);
+        toast.success('User updated successfully!');
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to update user');
+      }
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast.error('An error occurred while updating the user');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit User: {user.name || user.email}</DialogTitle>
+          <DialogDescription>
+            Update user information, contact details, and department assignments
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                placeholder="Enter full name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => handleInputChange('email', e.target.value)}
+                placeholder="Enter email address"
+                disabled
+              />
+            </div>
+            <div>
+              <Label htmlFor="role">Role</Label>
+              <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {USER_ROLES.map((role) => (
+                    <SelectItem key={role.value} value={role.value}>
+                      {role.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="country">Country</Label>
+              <Select value={formData.country} onValueChange={(value) => handleInputChange('country', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((country) => (
+                    <SelectItem key={country} value={country}>
+                      {country}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-3">Contact Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="phone">Office Phone</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  placeholder="Enter office phone"
+                />
+              </div>
+              <div>
+                <Label htmlFor="mobile">Mobile</Label>
+                <Input
+                  id="mobile"
+                  value={formData.mobile}
+                  onChange={(e) => handleInputChange('mobile', e.target.value)}
+                  placeholder="Enter mobile number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="extension">Extension</Label>
+                <Input
+                  id="extension"
+                  value={formData.extension}
+                  onChange={(e) => handleInputChange('extension', e.target.value)}
+                  placeholder="Enter extension"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Address Information */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-3">Address Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <Label htmlFor="address">Street Address</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  placeholder="Enter street address"
+                />
+              </div>
+              <div>
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  placeholder="Enter city"
+                />
+              </div>
+              <div>
+                <Label htmlFor="zip">ZIP/Postal Code</Label>
+                <Input
+                  id="zip"
+                  value={formData.zip}
+                  onChange={(e) => handleInputChange('zip', e.target.value)}
+                  placeholder="Enter ZIP code"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Department Assignments */}
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-3">Department Assignments</h3>
+            
+            {/* Current Assignments */}
+            {selectedDepartments.length > 0 && (
+              <div className="space-y-3 mb-4">
+                {selectedDepartments.map((deptRole, index) => {
+                  const department = departments.find(d => d.id === deptRole.departmentId);
+                  return (
+                    <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div>
+                          <Label className="text-xs text-gray-600">Department</Label>
+                          <Select 
+                            value={deptRole.departmentId} 
+                            onValueChange={(value) => updateDepartmentRole(index, 'departmentId', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {departments.map((dept) => (
+                                <SelectItem key={dept.id} value={dept.id}>
+                                  {dept.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-600">Job Position</Label>
+                          <Input
+                            value={deptRole.jobPosition}
+                            onChange={(e) => updateDepartmentRole(index, 'jobPosition', e.target.value)}
+                            placeholder="Job position"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`manager-${index}`}
+                            checked={deptRole.isManager}
+                            onChange={(e) => updateDepartmentRole(index, 'isManager', e.target.checked)}
+                            className="rounded"
+                          />
+                          <Label htmlFor={`manager-${index}`} className="text-sm">Manager</Label>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeDepartmentRole(index)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Add New Assignment */}
+            <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg">
+              <h4 className="font-medium text-gray-900 mb-3">Add New Department Assignment</h4>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div>
+                  <Label className="text-xs text-gray-600">Department</Label>
+                  <Select 
+                    value={newDepartmentRole.departmentId} 
+                    onValueChange={(value) => setNewDepartmentRole(prev => ({ ...prev, departmentId: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-600">Job Position</Label>
+                  <Input
+                    value={newDepartmentRole.jobPosition}
+                    onChange={(e) => setNewDepartmentRole(prev => ({ ...prev, jobPosition: e.target.value }))}
+                    placeholder="Job position"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="new-manager"
+                    checked={newDepartmentRole.isManager}
+                    onChange={(e) => setNewDepartmentRole(prev => ({ ...prev, isManager: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <Label htmlFor="new-manager" className="text-sm">Manager</Label>
+                </div>
+                <div>
+                  <Button
+                    type="button"
+                    onClick={addDepartmentRole}
+                    className="w-full"
+                    disabled={!newDepartmentRole.departmentId || !newDepartmentRole.jobPosition}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Form Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Updating...' : 'Update User'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
