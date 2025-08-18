@@ -10,6 +10,7 @@ interface DeletedFileData {
 export default function DeletedFilesBarChart() {
   const [deletedFiles, setDeletedFiles] = useState<DeletedFileData[]>([]);
   const [maxDeleted, setMaxDeleted] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Generate mock data for the last 30 days
@@ -35,7 +36,8 @@ export default function DeletedFilesBarChart() {
       }
       
       setDeletedFiles(mockData);
-      setMaxDeleted(maxCount);
+      setMaxDeleted(Math.max(1, maxCount)); // Ensure maxDeleted is at least 1
+      setIsLoading(false);
     };
 
     generateMockData();
@@ -51,6 +53,14 @@ export default function DeletedFilesBarChart() {
   //   fetchDeletedFiles();
   // }, []);
 
+  if (isLoading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full flex flex-col">
       {/* Chart Title */}
@@ -61,7 +71,7 @@ export default function DeletedFilesBarChart() {
 
       {/* Bar Chart */}
       <div className="flex-1 flex items-end justify-between gap-1 px-2">
-        {deletedFiles.map((deleted, index) => {
+        {deletedFiles.length > 0 ? deletedFiles.map((deleted, index) => {
           const height = maxDeleted > 0 ? (deleted.count / maxDeleted) * 100 : 0;
           const isToday = index === deletedFiles.length - 1;
           
@@ -73,7 +83,7 @@ export default function DeletedFilesBarChart() {
                   className={`w-full transition-all duration-500 ease-out ${
                     isToday ? 'bg-red-600' : 'bg-red-400'
                   } rounded-t-sm hover:bg-red-500`}
-                  style={{ height: `${height}%` }}
+                  style={{ height: `${Math.max(0, height)}%` }}
                 />
                 
                 {/* Tooltip */}
@@ -88,20 +98,26 @@ export default function DeletedFilesBarChart() {
               </div>
             </div>
           );
-        })}
+        }) : (
+          <div className="flex-1 flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <div className="text-lg">No data available</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Summary Stats */}
       <div className="mt-4 grid grid-cols-2 gap-4 text-center">
         <div>
           <div className="text-2xl font-bold text-red-600">
-            {deletedFiles.reduce((sum, deleted) => sum + deleted.count, 0)}
+            {deletedFiles.reduce((sum, deleted) => sum + (deleted.count || 0), 0)}
           </div>
           <div className="text-xs text-gray-500">Total Deleted</div>
         </div>
         <div>
           <div className="text-2xl font-bold text-gray-700">
-            {Math.round(deletedFiles.reduce((sum, deleted) => sum + deleted.count, 0) / deletedFiles.length)}
+            {deletedFiles.length > 0 ? Math.round(deletedFiles.reduce((sum, deleted) => sum + (deleted.count || 0), 0) / deletedFiles.length) : 0}
           </div>
           <div className="text-xs text-gray-500">Daily Average</div>
         </div>

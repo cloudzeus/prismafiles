@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Building, Users, Plus, Edit, Trash2 } from "lucide-react"
 import EditDepartmentModal from "@/components/edit-department-modal"
+import AddDepartmentModal from "@/components/add-department-modal"
 
 interface User {
   id: string
@@ -20,6 +21,8 @@ interface Department {
   email: string | null
   managerId: string | null
   parentId: string | null
+  createdAt: Date
+  updatedAt: Date
   userDepartments: {
     id: string
     userId: string
@@ -29,16 +32,40 @@ interface Department {
     joinedAt: Date
     leftAt: Date | null
     user: {
+      id: string
       name: string | null
       email: string
+      image: string | null
     }
   }[]
   departmentRoles: {
     id: string
     name: string
     description: string | null
+    departmentId: string
     level: number
     isActive: boolean
+    createdAt: Date
+    updatedAt: Date
+    department: {
+      id: string
+      name: string
+      userDepartments: {
+        id: string
+        userId: string
+        departmentId: string
+        jobPosition: string
+        isManager: boolean
+        joinedAt: Date
+        leftAt: Date | null
+        user: {
+          id: string
+          name: string | null
+          email: string
+          image: string | null
+        }
+      }[]
+    }
   }[]
   manager?: {
     name: string | null
@@ -57,6 +84,7 @@ export default function DepartmentsPageClient() {
   const [isLoading, setIsLoading] = useState(true)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null)
+  const [addModalOpen, setAddModalOpen] = useState(false)
 
   useEffect(() => {
     fetchDepartments()
@@ -102,6 +130,10 @@ export default function DepartmentsPageClient() {
     )
   }
 
+  const handleDepartmentAdded = (newDepartment: Department) => {
+    setDepartments(prev => [...prev, newDepartment])
+  }
+
   const handleDeleteDepartment = async (departmentId: string, departmentName: string) => {
     if (!confirm(`Are you sure you want to delete the "${departmentName}" department? This will also delete all roles and user associations. This action cannot be undone.`)) {
       return
@@ -145,7 +177,10 @@ export default function DepartmentsPageClient() {
             Manage organizational departments and their members
           </p>
         </div>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+        <button 
+          onClick={() => setAddModalOpen(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
           <Plus className="h-4 w-4" />
           Add Department
         </button>
@@ -254,7 +289,10 @@ export default function DepartmentsPageClient() {
                 <p className="text-gray-600 mb-4">
                   Get started by creating your first department to organize your team.
                 </p>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <button 
+                  onClick={() => setAddModalOpen(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
                   Create Department
                 </button>
               </CardContent>
@@ -273,6 +311,14 @@ export default function DepartmentsPageClient() {
         users={users}
         departments={departments}
         onDepartmentUpdated={handleDepartmentUpdated}
+      />
+
+      <AddDepartmentModal
+        isOpen={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        users={users}
+        departments={departments}
+        onDepartmentAdded={handleDepartmentAdded}
       />
     </div>
   )

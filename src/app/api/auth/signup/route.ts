@@ -43,7 +43,51 @@ export async function POST(request: NextRequest) {
         name: name || null,
         role: role || "EMPLOYEE"
       }
-    })
+    });
+
+    // Automatically create the user folder in BunnyCDN
+    try {
+      const apiKey = process.env.BUNNY_ACCESS_KEY;
+      const storageZone = process.env.BUNNY_STORAGE_ZONE || 'kolleris';
+      
+      if (apiKey) {
+        const folderPath = `prismafiles/megaparking/users/${user.id}`;
+        const folderUrl = `https://storage.bunnycdn.com/${storageZone}/${folderPath}/`;
+        
+        console.log(`Creating user folder: ${folderPath}/`);
+        
+        const folderResponse = await fetch(folderUrl, {
+          method: 'PUT',
+          headers: {
+            'AccessKey': apiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({})
+        });
+
+        if (folderResponse.ok || folderResponse.status === 409) {
+          console.log(`Successfully created user folder: ${folderPath}/`);
+          
+          // Add a test file to confirm the folder structure
+          const testFilePath = `${folderPath}/user-info.txt`;
+          const testFileUrl = `https://storage.bunnycdn.com/${storageZone}/${testFilePath}`;
+          
+          await fetch(testFileUrl, {
+            method: 'PUT',
+            headers: {
+              'AccessKey': apiKey,
+              'Content-Type': 'text/plain',
+            },
+            body: `User: ${user.name || user.email}\nEmail: ${user.email}\nRole: ${user.role}\nCreated: ${new Date().toISOString()}`
+          });
+        } else {
+          console.error(`Failed to create user folder: ${folderPath}`, folderResponse.status);
+        }
+      }
+    } catch (error) {
+      console.error('Error creating user folder in BunnyCDN:', error);
+      // Don't fail the user creation if folder creation fails
+    }
 
     return NextResponse.json({
       success: true,

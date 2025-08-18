@@ -19,6 +19,18 @@ export default function FileTypesPieChart() {
   ]);
 
   const [totalFiles, setTotalFiles] = useState(130);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Ensure all data is valid
+  useEffect(() => {
+    setFileTypes(prev => prev.map(item => ({
+      ...item,
+      count: item.count || 0,
+      percentage: item.percentage || 0
+    })));
+    setTotalFiles(prev => prev || 0);
+    setIsLoading(false);
+  }, []);
 
   // Mock data - in real implementation, fetch from BunnyCDN API
   useEffect(() => {
@@ -31,48 +43,62 @@ export default function FileTypesPieChart() {
     // fetchFileTypes();
   }, []);
 
+  if (isLoading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-full flex flex-col">
       {/* Pie Chart Visualization */}
       <div className="flex-1 flex items-center justify-center">
-        <div className="relative w-48 h-48">
-          {/* SVG Pie Chart */}
-          <svg className="w-full h-full" viewBox="0 0 100 100">
-            {fileTypes.map((fileType, index) => {
-              const previousPercentages = fileTypes
-                .slice(0, index)
-                .reduce((sum, item) => sum + item.percentage, 0);
-              
-              const startAngle = (previousPercentages / 100) * 360;
-              const endAngle = ((previousPercentages + fileType.percentage) / 100) * 360;
-              
-              const x1 = 50 + 40 * Math.cos((startAngle * Math.PI) / 180);
-              const y1 = 50 + 40 * Math.sin((startAngle * Math.PI) / 180);
-              const x2 = 50 + 40 * Math.cos((endAngle * Math.PI) / 180);
-              const y2 = 50 + 40 * Math.sin((endAngle * Math.PI) / 180);
-              
-              const largeArcFlag = fileType.percentage > 50 ? 1 : 0;
-              
-              return (
-                <path
-                  key={fileType.type}
-                  d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
-                  fill={fileType.color}
-                  stroke="white"
-                  strokeWidth="1"
-                />
-              );
-            })}
-          </svg>
-          
-          {/* Center Text */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-700">{totalFiles}</div>
-              <div className="text-xs text-gray-500">Total Files</div>
+        {fileTypes.length > 0 ? (
+          <div className="relative w-48 h-48">
+            {/* SVG Pie Chart */}
+            <svg className="w-full h-full" viewBox="0 0 100 100">
+              {fileTypes.map((fileType, index) => {
+                const previousPercentages = fileTypes
+                  .slice(0, index)
+                  .reduce((sum, item) => sum + (item.percentage || 0), 0);
+                
+                const startAngle = (previousPercentages / 100) * 360;
+                const endAngle = ((previousPercentages + (fileType.percentage || 0)) / 100) * 360;
+                
+                const x1 = 50 + 40 * Math.cos((startAngle * Math.PI) / 180);
+                const y1 = 50 + 40 * Math.sin((startAngle * Math.PI) / 180);
+                const x2 = 50 + 40 * Math.cos((endAngle * Math.PI) / 180);
+                const y2 = 50 + 40 * Math.sin((endAngle * Math.PI) / 180);
+                
+                const largeArcFlag = (fileType.percentage || 0) > 50 ? 1 : 0;
+                
+                return (
+                  <path
+                    key={fileType.type}
+                    d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArcFlag} 1 ${x2} ${y2} Z`}
+                    fill={fileType.color}
+                    stroke="white"
+                    strokeWidth="1"
+                  />
+                );
+              })}
+            </svg>
+            
+            {/* Center Text */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-700">{totalFiles || 0}</div>
+                <div className="text-xs text-gray-500">Total Files</div>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="text-center text-gray-500">
+            <div className="text-lg">No data available</div>
+          </div>
+        )}
       </div>
 
       {/* Legend */}

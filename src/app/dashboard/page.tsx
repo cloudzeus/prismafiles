@@ -17,11 +17,19 @@ export default async function DashboardPage() {
     redirect("/auth/signin")
   }
 
-  const isAdmin = hasRole(user.role, "ADMINISTRATOR")
-  const isManager = hasRole(user.role, "MANAGER") || isAdmin
+  // Ensure user data is valid
+  const safeUser = {
+    id: user.id || '',
+    email: user.email || '',
+    name: user.name || '',
+    role: user.role || 'USER'
+  }
+
+  const isAdmin = hasRole(safeUser.role, "ADMINISTRATOR")
+  const isManager = hasRole(safeUser.role, "MANAGER") || isAdmin
 
   return (
-    <DashboardLayout user={user}>
+    <DashboardLayout user={safeUser}>
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
@@ -107,8 +115,8 @@ export default async function DashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold text-blue-600 capitalize">{user.role}</p>
-              <p className="text-sm text-gray-600 mt-1">{user.email}</p>
+              <p className="text-2xl font-bold text-blue-600 capitalize">{safeUser.role || 'User'}</p>
+              <p className="text-sm text-gray-600 mt-1">{safeUser.email || 'No email'}</p>
             </CardContent>
           </Card>
 
@@ -131,7 +139,12 @@ export default async function DashboardPage() {
                 <a href="/users/profile" className="w-full text-left px-3 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                   View Profile
                 </a>
-                {isAdmin && <GenerateFoldersButton />}
+                {isAdmin && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-600">Create local folders for all departments and users in prismafiles/megaparking</p>
+                    <GenerateFoldersButton />
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

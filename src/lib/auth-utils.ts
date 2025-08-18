@@ -23,14 +23,21 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
     const { payload } = await jwtVerify(token, JWT_SECRET)
     
+    // Ensure all required fields are present and valid
+    if (!payload.id || !payload.email || !payload.role) {
+      console.warn('Invalid JWT payload:', payload)
+      return null
+    }
+    
     return {
-      id: payload.id as string,
-      email: payload.email as string,
-      name: payload.name as string | null,
-      role: payload.role as string,
-      image: payload.image as string | null
+      id: String(payload.id),
+      email: String(payload.email),
+      name: payload.name ? String(payload.name) : null,
+      role: String(payload.role),
+      image: payload.image ? String(payload.image) : null
     }
   } catch (error) {
+    console.error('Error in getCurrentUser:', error)
     return null
   }
 }
@@ -46,6 +53,11 @@ export async function requireAuth(): Promise<AuthUser> {
 }
 
 export function hasRole(userRole: string, requiredRole: string): boolean {
+  // Ensure inputs are valid strings
+  if (!userRole || !requiredRole || typeof userRole !== 'string' || typeof requiredRole !== 'string') {
+    return false;
+  }
+
   const roleHierarchy = {
     COLLABORATOR: 1,
     EMPLOYEE: 2,
@@ -53,13 +65,18 @@ export function hasRole(userRole: string, requiredRole: string): boolean {
     ADMINISTRATOR: 4
   }
 
-  const userLevel = roleHierarchy[userRole as keyof typeof roleHierarchy] || 0
-  const requiredLevel = roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0
+  const userLevel = roleHierarchy[userRole.toUpperCase() as keyof typeof roleHierarchy] || 0
+  const requiredLevel = roleHierarchy[requiredRole.toUpperCase() as keyof typeof roleHierarchy] || 0
 
   return userLevel >= requiredLevel
 }
 
 export function requireRole(userRole: string, requiredRole: string): boolean {
+  // Ensure inputs are valid strings
+  if (!userRole || !requiredRole || typeof userRole !== 'string' || typeof requiredRole !== 'string') {
+    throw new Error(`Invalid role values: userRole=${userRole}, requiredRole=${requiredRole}`)
+  }
+
   if (!hasRole(userRole, requiredRole)) {
     throw new Error(`Role ${requiredRole} required`)
   }
@@ -69,6 +86,12 @@ export function requireRole(userRole: string, requiredRole: string): boolean {
 
 export async function getFreshUserData(userId: string) {
   try {
+    // Ensure userId is valid
+    if (!userId || typeof userId !== 'string') {
+      console.warn('Invalid userId:', userId)
+      return null
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -81,6 +104,13 @@ export async function getFreshUserData(userId: string) {
         updatedAt: true
       }
     })
+
+    // Ensure user data is valid
+    if (!user || !user.id || !user.email || !user.role) {
+      console.warn('Invalid user data from database:', user)
+      return null
+    }
+
     return user
   } catch (error) {
     console.error('Error fetching fresh user data:', error)

@@ -13,6 +13,8 @@ import {
   Star,
   Users
 } from "lucide-react"
+import EditDepartmentRoleModal from "./edit-department-role-modal"
+import AddUserToRoleModal from "./add-user-to-role-modal"
 
 interface User {
   id: string
@@ -66,8 +68,10 @@ interface Department {
     joinedAt: Date
     leftAt: Date | null
     user: {
+      id: string
       name: string | null
       email: string
+      image: string | null
     }
   }[]
   departmentRoles: DepartmentRole[]
@@ -86,6 +90,8 @@ interface DepartmentRoleCardProps {
 
 export default function DepartmentRoleCard({ role, levelInfo, department, onRoleDeleted }: DepartmentRoleCardProps) {
   const [isRemovingUser, setIsRemovingUser] = useState<string | null>(null)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false)
 
   // Get users assigned to this specific role
   const roleUsers = department.userDepartments.filter(
@@ -96,13 +102,21 @@ export default function DepartmentRoleCard({ role, levelInfo, department, onRole
       id: userDept.userId,
       name: userDept.user.name,
       email: userDept.user.email,
-      image: null // We don't have image in the current query
+      image: userDept.user.image // Now we have the image field from the API
     }
   }))
 
   const handleEditRole = () => {
-    // TODO: Implement edit role modal/form
-    alert('Edit role functionality coming soon!')
+    setIsEditModalOpen(true)
+  }
+
+  const handleRoleUpdated = (updatedRole: DepartmentRole) => {
+    // Update the role in the parent component
+    if (onRoleDeleted) {
+      // We'll need to implement a different callback for updates
+      // For now, we'll refresh the page to show updated data
+      window.location.reload()
+    }
   }
 
   const handleDeleteRole = async () => {
@@ -131,8 +145,12 @@ export default function DepartmentRoleCard({ role, levelInfo, department, onRole
   }
 
   const handleAddUser = () => {
-    // TODO: Implement add user modal/form
-    alert('Add user functionality coming soon!')
+    setIsAddUserModalOpen(true)
+  }
+
+  const handleUserAdded = (userDepartment: any) => {
+    // Refresh the page to show updated data
+    window.location.reload()
   }
 
   const handleRemoveUser = async (userId: string) => {
@@ -240,9 +258,9 @@ export default function DepartmentRoleCard({ role, levelInfo, department, onRole
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="relative">
-                        <Avatar className="h-8 w-8 border-2 border-gray-200 hover:border-blue-300 transition-colors">
+                        <Avatar className="h-12 w-12 border-2 border-gray-200 hover:border-blue-300 transition-colors">
                           <AvatarImage src={userDept.user.image || undefined} alt={userDept.user.name || userDept.user.email} />
-                          <AvatarFallback className="text-xs bg-gray-100 text-gray-600">
+                          <AvatarFallback className="text-sm bg-blue-600 text-white">
                             {getInitials(userDept.user.name, userDept.user.email)}
                           </AvatarFallback>
                         </Avatar>
@@ -251,11 +269,11 @@ export default function DepartmentRoleCard({ role, levelInfo, department, onRole
                         <button
                           onClick={() => handleRemoveUser(userDept.userId)}
                           disabled={isRemovingUser === userDept.userId}
-                          className="absolute -top-1 -right-1 h-4 w-4 bg-gray-900 text-green-500 rounded-full 
-                                   flex items-center justify-center text-[9px] font-bold opacity-0 group-hover:opacity-100 
+                          className="absolute -top-2 -right-2 h-5 w-5 bg-gray-900 text-green-500 rounded-full 
+                                   flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 
                                    transition-opacity hover:bg-red-600 hover:text-white disabled:opacity-50"
                         >
-                          <X className="h-2.5 w-2.5" />
+                          <X className="h-3 w-3" />
                         </button>
                       </div>
                     </TooltipTrigger>
@@ -274,6 +292,23 @@ export default function DepartmentRoleCard({ role, levelInfo, department, onRole
           )}
         </div>
       </div>
+
+      {/* Edit Role Modal */}
+      <EditDepartmentRoleModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        role={role}
+        onRoleUpdated={handleRoleUpdated}
+      />
+
+      {/* Add User to Role Modal */}
+      <AddUserToRoleModal
+        isOpen={isAddUserModalOpen}
+        onClose={() => setIsAddUserModalOpen(false)}
+        role={role}
+        departmentId={department.id}
+        onUserAdded={handleUserAdded}
+      />
     </TooltipProvider>
   )
 }

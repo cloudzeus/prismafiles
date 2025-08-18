@@ -13,6 +13,7 @@ import {
   Edit
 } from "lucide-react"
 import DepartmentRoleCard from "./department-role-card"
+import EditDepartmentModal from "./edit-department-modal"
 
 interface User {
   id: string
@@ -66,8 +67,10 @@ interface Department {
     joinedAt: Date
     leftAt: Date | null
     user: {
+      id: string
       name: string | null
       email: string
+      image: string | null
     }
   }[]
   departmentRoles: DepartmentRole[]
@@ -85,10 +88,13 @@ interface DepartmentCardProps {
   department: Department
   onDepartmentDeleted?: (departmentId: string) => void
   onRoleDeleted?: (roleId: string) => void
+  users: any[]
+  departments: Department[]
 }
 
-export default function DepartmentCard({ department, onDepartmentDeleted, onRoleDeleted }: DepartmentCardProps) {
+export default function DepartmentCard({ department, onDepartmentDeleted, onRoleDeleted, users, departments }: DepartmentCardProps) {
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
   const getLevelLabel = (level: number | null | undefined) => {
     const safeLevel = level || 1
@@ -108,8 +114,12 @@ export default function DepartmentCard({ department, onDepartmentDeleted, onRole
   }
 
   const handleEditDepartment = (departmentId: string) => {
-    // TODO: Implement edit department modal/form
-    alert(`Edit ${department.name} department`)
+    setIsEditModalOpen(true)
+  }
+
+  const handleDepartmentUpdated = (updatedDepartment: Department) => {
+    // For now, we'll refresh the page to show updated data
+    window.location.reload()
   }
 
   const handleDeleteDepartment = async (departmentId: string, departmentName: string) => {
@@ -229,6 +239,16 @@ export default function DepartmentCard({ department, onDepartmentDeleted, onRole
           )}
         </div>
       </CardContent>
+
+      {/* Edit Department Modal */}
+      <EditDepartmentModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        department={department}
+        users={users}
+        departments={departments}
+        onDepartmentUpdated={handleDepartmentUpdated}
+      />
     </Card>
   )
 }

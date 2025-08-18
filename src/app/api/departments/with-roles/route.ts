@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
           where: { leftAt: null }, // Only active users
           include: {
             user: {
-              select: { name: true, email: true }
+              select: { id: true, name: true, email: true, image: true }
             }
           }
         },

@@ -23,8 +23,10 @@ interface Department {
     joinedAt: Date
     leftAt: Date | null
     user: {
+      id: string
       name: string | null
       email: string
+      image: string | null
     }
   }[]
   departmentRoles: {
@@ -68,6 +70,7 @@ interface Department {
 
 export default function DepartmentRolesPage() {
   const [departments, setDepartments] = useState<Department[]>([])
+  const [users, setUsers] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
 
@@ -89,6 +92,15 @@ export default function DepartmentRolesPage() {
             setDepartments(data.departments)
           }
         }
+
+        // Fetch users data for manager selection
+        const usersResponse = await fetch('/api/users/list')
+        if (usersResponse.ok) {
+          const usersData = await usersResponse.json()
+          if (usersData.success) {
+            setUsers(usersData.users)
+          }
+        }
       } catch (error) {
         console.error('Error fetching data:', error)
       } finally {
@@ -108,6 +120,18 @@ export default function DepartmentRolesPage() {
       ...dept,
       departmentRoles: dept.departmentRoles.filter(role => role.id !== deletedRoleId)
     })))
+  }
+
+  const handleRoleAdded = (newRole: any) => {
+    setDepartments(prev => prev.map(dept => {
+      if (dept.id === newRole.departmentId) {
+        return {
+          ...dept,
+          departmentRoles: [...dept.departmentRoles, newRole]
+        }
+      }
+      return dept
+    }))
   }
 
   if (!user) {
@@ -132,7 +156,10 @@ export default function DepartmentRolesPage() {
               View and manage job positions and roles within each department
             </p>
           </div>
-          <AddRoleButton />
+          <AddRoleButton 
+            departments={departments}
+            onRoleAdded={handleRoleAdded}
+          />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -142,6 +169,8 @@ export default function DepartmentRolesPage() {
               department={department}
               onDepartmentDeleted={handleDepartmentDeleted}
               onRoleDeleted={handleRoleDeleted}
+              users={users}
+              departments={departments}
             />
           ))}
         </div>

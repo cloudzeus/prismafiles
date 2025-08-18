@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 export default function RedisStatusCheck() {
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -24,19 +24,22 @@ export default function RedisStatusCheck() {
     checkRedisStatus();
   }, []);
 
-  if (isLoading) {
-    return null; // Don't show anything while loading
+  if (isLoading || isConnected === null) {
+    return null; // Don't show anything while loading or if status is unknown
   }
+
+  // Ensure isConnected is a boolean to prevent any potential issues
+  const connectionStatus = Boolean(isConnected);
 
   return (
     <div className="mt-3">
       <span
         className={cn(
           "inline-flex items-center px-2 py-1 rounded-[4px] text-[9px] font-bold text-white",
-          isConnected ? "bg-green-600" : "bg-red-600"
+          connectionStatus ? "bg-green-600" : "bg-red-600"
         )}
       >
-        {isConnected ? "Redis Connected" : "Redis Disconnected"}
+        {connectionStatus ? "Redis Connected" : "Redis Disconnected"}
       </span>
     </div>
   );
