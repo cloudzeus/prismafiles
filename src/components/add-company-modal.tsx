@@ -146,7 +146,7 @@ export default function AddCompanyModal({ isOpen, onClose, onCompanyAdded }: Add
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
@@ -165,7 +165,7 @@ export default function AddCompanyModal({ isOpen, onClose, onCompanyAdded }: Add
               <CardDescription>Essential company details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sodtype">Company Type *</Label>
                   <Select value={formData.sodtype || ""} onValueChange={(value) => handleInputChange('sodtype', value)}>
@@ -188,8 +188,6 @@ export default function AddCompanyModal({ isOpen, onClose, onCompanyAdded }: Add
                     onChange={(e) => handleInputChange('trdr', e.target.value)}
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="code">Company Code *</Label>
                   <Input
@@ -200,6 +198,8 @@ export default function AddCompanyModal({ isOpen, onClose, onCompanyAdded }: Add
                     required
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Company Name *</Label>
                   <Input
@@ -210,8 +210,6 @@ export default function AddCompanyModal({ isOpen, onClose, onCompanyAdded }: Add
                     required
                   />
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="afm">AFM (VAT Number)</Label>
                   <Input
@@ -221,6 +219,8 @@ export default function AddCompanyModal({ isOpen, onClose, onCompanyAdded }: Add
                     onChange={(e) => handleInputChange('afm', e.target.value)}
                   />
                 </div>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="sotitle">Commercial Name</Label>
                   <Input
@@ -228,6 +228,15 @@ export default function AddCompanyModal({ isOpen, onClose, onCompanyAdded }: Add
                     placeholder="Commercial name"
                     value={formData.sotitle}
                     onChange={(e) => handleInputChange('sotitle', e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="country">Country</Label>
+                  <Input
+                    id="country"
+                    placeholder="Country (ISO-2)"
+                    value={formData.country}
+                    onChange={(e) => handleInputChange('country', e.target.value)}
                   />
                 </div>
               </div>

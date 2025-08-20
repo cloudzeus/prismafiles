@@ -5,10 +5,45 @@ let redis: Redis | null = null;
 
 if (typeof window === 'undefined') {
   // Server-side only
-  redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-    maxRetriesPerRequest: 3,
+  const redisConfig = {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD || undefined,
+    db: parseInt(process.env.REDIS_DB || '0'),
+    maxRetriesPerRequest: 5,
+    retryDelayOnFailover: 100,
+    enableReadyCheck: true,
     lazyConnect: true,
-  });
+    keepAlive: 30000,
+    connectTimeout: 10000,
+    commandTimeout: 5000,
+    reconnectOnError: (err: any) => {
+      const targetError = 'READONLY';
+      if (err.message.includes(targetError)) {
+        return true;
+      }
+      return false;
+    },
+    retryDelayOnClusterDown: 300,
+  };
+
+  // Use REDIS_URL if provided, otherwise use individual config
+  if (process.env.REDIS_URL) {
+    // For production Redis URLs, add additional connection resilience
+    const productionConfig = {
+      ...redisConfig,
+      maxRetriesPerRequest: 10,
+      retryDelayOnFailover: 200,
+      connectTimeout: 15000,
+      commandTimeout: 10000,
+      keepAlive: 60000,
+      family: 4, // Force IPv4 for better compatibility
+      tls: process.env.REDIS_URL.includes('rediss://') ? {} : undefined,
+    };
+    redis = new Redis(process.env.REDIS_URL, productionConfig);
+  } else {
+    redis = new Redis(redisConfig);
+  }
 
   // Connection event handlers
   redis.on('connect', () => {
@@ -19,8 +54,12 @@ if (typeof window === 'undefined') {
     console.log('🚀 Redis is ready to accept commands');
   });
 
-  redis.on('error', (err) => {
+  redis.on('error', (err: any) => {
     console.error('❌ Redis connection error:', err);
+    // Attempt to reconnect on critical errors
+    if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
+      console.log('🔄 Attempting to reconnect to Redis...');
+    }
   });
 
   redis.on('close', () => {
@@ -29,6 +68,38 @@ if (typeof window === 'undefined') {
 
   redis.on('reconnecting', () => {
     console.log('🔄 Redis reconnecting...');
+  });
+
+  redis.on('end', () => {
+    console.log('🔚 Redis connection ended');
+  });
+
+  // Health check and reconnection logic
+  setInterval(async () => {
+    if (redis && redis.status === 'ready') {
+      try {
+        await redis.ping();
+      } catch (error) {
+        console.log('🏓 Redis health check failed, attempting reconnection...');
+        redis.disconnect();
+        redis.connect();
+      }
+    }
+  }, 30000); // Check every 30 seconds
+
+  // Handle process termination gracefully
+  process.on('SIGINT', () => {
+    if (redis) {
+      console.log('🔄 Gracefully closing Redis connection...');
+      redis.disconnect();
+    }
+  });
+
+  process.on('SIGTERM', () => {
+    if (redis) {
+      console.log('🔄 Gracefully closing Redis connection...');
+      redis.disconnect();
+    }
   });
 }
 
