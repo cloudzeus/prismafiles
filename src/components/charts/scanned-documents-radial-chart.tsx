@@ -1,5 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
+import {
+  RadialBar,
+  RadialBarChart,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 interface ScannedDocumentData {
   total: number;
@@ -7,6 +17,21 @@ interface ScannedDocumentData {
   pending: number;
   failed: number;
 }
+
+const chartConfig = {
+  scanned: {
+    label: "Scanned Documents",
+    color: "#10B981",
+  },
+  pending: {
+    label: "Pending Documents",
+    color: "#F59E0B",
+  },
+  failed: {
+    label: "Failed Documents",
+    color: "#EF4444",
+  },
+};
 
 export default function ScannedDocumentsRadialChart() {
   const [data, setData] = useState<ScannedDocumentData>({
@@ -19,7 +44,6 @@ export default function ScannedDocumentsRadialChart() {
   const [percentage, setPercentage] = useState(72);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Ensure all data is valid
   useEffect(() => {
     setData(prev => ({
       total: prev.total || 0,
@@ -31,21 +55,9 @@ export default function ScannedDocumentsRadialChart() {
   }, []);
 
   useEffect(() => {
-    // Calculate percentage
     const calculatedPercentage = data.total > 0 ? Math.round((data.scanned / data.total) * 100) : 0;
     setPercentage(calculatedPercentage);
   }, [data]);
-
-  // Mock data - in real implementation, fetch from API
-  useEffect(() => {
-    // TODO: Replace with actual API call
-    // const fetchData = async () => {
-    //   const response = await fetch('/api/documents/scanning-status');
-    //   const result = await response.json();
-    //   setData(result);
-    // };
-    // fetchData();
-  }, []);
 
   if (isLoading) {
     return (
@@ -55,55 +67,54 @@ export default function ScannedDocumentsRadialChart() {
     );
   }
 
-  const radius = 80;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDasharray = circumference;
-  const strokeDashoffset = circumference - ((percentage || 0) / 100) * circumference;
+  const chartData = [
+    {
+      name: "scanned",
+      value: data.scanned,
+      fill: "#10B981",
+    },
+    {
+      name: "pending",
+      value: data.pending,
+      fill: "#F59E0B",
+    },
+    {
+      name: "failed",
+      value: data.failed,
+      fill: "#EF4444",
+    },
+  ];
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center">
-      {/* Radial Progress Chart */}
-      <div className="relative">
-        {data.total > 0 && percentage >= 0 ? (
-          <svg className="w-48 h-48 transform -rotate-90">
-            {/* Background Circle */}
-            <circle
-              cx="96"
-              cy="96"
-              r={radius}
-              stroke="#E5E7EB"
-              strokeWidth="12"
-              fill="transparent"
-            />
-            
-            {/* Progress Circle */}
-            <circle
-              cx="96"
-              cy="96"
-              r={radius}
-              stroke="#10B981"
-              strokeWidth="12"
-              fill="transparent"
-              strokeDasharray={strokeDasharray}
-              strokeDashoffset={strokeDashoffset}
-              strokeLinecap="round"
-              className="transition-all duration-1000 ease-in-out"
-            />
-          </svg>
-        ) : (
-          <div className="w-48 h-48 flex items-center justify-center text-gray-500">
-            <div className="text-center">
-              <div className="text-lg">No data available</div>
-            </div>
-          </div>
-        )}
-        
-        {/* Center Content */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-gray-900">{percentage || 0}%</div>
-            <div className="text-sm text-gray-600">Scanned</div>
-          </div>
+      <div className="w-full h-full">
+        <ChartContainer config={chartConfig}>
+          <ResponsiveContainer width="100%" height={200}>
+            <RadialBarChart
+              cx="50%"
+              cy="50%"
+              innerRadius="30%"
+              outerRadius="90%"
+              data={chartData}
+              startAngle={180}
+              endAngle={0}
+            >
+              <RadialBar
+                dataKey="value"
+                cornerRadius={30}
+                fill="#8884d8"
+              />
+              <ChartTooltip />
+            </RadialBarChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </div>
+
+      {/* Center Content */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-gray-900">{percentage || 0}%</div>
+          <div className="text-sm text-gray-600">Scanned</div>
         </div>
       </div>
 

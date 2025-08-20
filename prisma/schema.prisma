@@ -150,3 +150,33 @@ model DepartmentRole {
   @@unique([departmentId, name]) // Role names must be unique within a department
   @@map("department_roles")
 }
+
+model Company {
+  id         Int       @id @default(autoincrement())
+  sodtype    Int       // 12 = supplier, 13 = customer
+  trdr       Int?      @unique // SoftOne TRDR (unique per trader)
+  code       String    @db.VarChar(64)
+  name       String    @db.VarChar(255)
+  afm        String    @db.VarChar(20)     // Greek VAT number
+  country    String?   @db.VarChar(10)     // Country code or name
+  address    String?   @db.VarChar(255)
+  zip        String?   @db.VarChar(10)
+  city       String?   @db.VarChar(100)
+  phone01    String?   @db.VarChar(30)
+  phone02    String?   @db.VarChar(30)
+  fax        String?   @db.VarChar(30)
+  jobtypetrd Int?
+  webpage    String?   @db.VarChar(255)
+  email      String?   @db.VarChar(255)
+  emailacc   String?   @db.VarChar(255)
+  irsdata    Json?                         // free-form ERP payload
+  sotitle    String?   @db.VarChar(100)
+  concent    Boolean?  @default(false)     // kept original field name
+  upddate    DateTime  @updatedAt @db.Timestamp(0)
+
+  @@map("companies")
+  @@index([sodtype])
+  @@index([afm])
+  @@index([code])
+  @@index([name])
+}

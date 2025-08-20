@@ -1,34 +1,59 @@
 "use client";
 import { useState, useEffect } from "react";
+import {
+  Bar,
+  BarChart,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 interface DeletedFileData {
   period: string;
   count: number;
   date: string;
+  weekStart: string;
 }
+
+const chartConfig = {
+  deleted: {
+    label: "Deleted Files",
+    color: "#EF4444",
+  },
+};
 
 export default function DeletedFilesBarChart() {
   const [deletedFiles, setDeletedFiles] = useState<DeletedFileData[]>([]);
-  const [maxDeleted, setMaxDeleted] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Generate mock data for the last 30 days
+    // Generate mock data for the last 4 weeks (weekly basis)
     const generateMockData = () => {
       const mockData: DeletedFileData[] = [];
-      let maxCount = 0;
       
-      for (let i = 29; i >= 0; i--) {
+      for (let i = 3; i >= 0; i--) {
         const date = new Date();
-        date.setDate(date.getDate() - i);
+        date.setDate(date.getDate() - (i * 7));
         
-        const count = Math.floor(Math.random() * 15) + 1; // Random between 1-16
-        maxCount = Math.max(maxCount, count);
+        // Get the start of the week (Sunday)
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay());
+        
+        const count = Math.floor(Math.random() * 50) + 10; // Random between 10-60
         
         mockData.push({
-          period: date.getDate().toString(),
+          period: `Week ${4 - i}`,
           count,
-          date: date.toLocaleDateString('en-US', { 
+          date: weekStart.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric' 
+          }),
+          weekStart: weekStart.toLocaleDateString('en-US', { 
             month: 'short', 
             day: 'numeric' 
           })
@@ -36,22 +61,11 @@ export default function DeletedFilesBarChart() {
       }
       
       setDeletedFiles(mockData);
-      setMaxDeleted(Math.max(1, maxCount)); // Ensure maxDeleted is at least 1
       setIsLoading(false);
     };
 
     generateMockData();
   }, []);
-
-  // TODO: Replace with actual API call
-  // useEffect(() => {
-  //   const fetchDeletedFiles = async () => {
-  //     const response = await fetch('/api/files/deleted');
-  //     const data = await response.json();
-  //     setDeletedFiles(data);
-  //   };
-  //   fetchDeletedFiles();
-  // }, []);
 
   if (isLoading) {
     return (
@@ -61,50 +75,50 @@ export default function DeletedFilesBarChart() {
     );
   }
 
+  const chartData = deletedFiles.map((deleted, index) => ({
+    name: deleted.period,
+    deleted: deleted.count,
+    weekStart: deleted.weekStart,
+    isCurrentWeek: index === deletedFiles.length - 1,
+  }));
+
   return (
     <div className="w-full h-full flex flex-col">
       {/* Chart Title */}
       <div className="text-center mb-4">
-        <div className="text-sm text-gray-500">Last 30 Days</div>
+        <div className="text-sm text-gray-500">Last 4 Weeks</div>
         <div className="text-lg font-semibold text-gray-900">Deleted Files</div>
       </div>
 
       {/* Bar Chart */}
-      <div className="flex-1 flex items-end justify-between gap-1 px-2">
-        {deletedFiles.length > 0 ? deletedFiles.map((deleted, index) => {
-          const height = maxDeleted > 0 ? (deleted.count / maxDeleted) * 100 : 0;
-          const isToday = index === deletedFiles.length - 1;
-          
-          return (
-            <div key={index} className="flex flex-col items-center flex-1">
-              {/* Bar */}
-              <div className="relative w-full">
-                <div
-                  className={`w-full transition-all duration-500 ease-out ${
-                    isToday ? 'bg-red-600' : 'bg-red-400'
-                  } rounded-t-sm hover:bg-red-500`}
-                  style={{ height: `${Math.max(0, height)}%` }}
-                />
-                
-                {/* Tooltip */}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                  {deleted.count} deleted
-                </div>
-              </div>
-              
-              {/* Period Label */}
-              <div className="text-xs text-gray-600 mt-1 text-center">
-                {deleted.period}
-              </div>
-            </div>
-          );
-        }) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
-            <div className="text-center">
-              <div className="text-lg">No data available</div>
-            </div>
-          </div>
-        )}
+      <div className="flex-1">
+        <ChartContainer config={chartConfig}>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={chartData}>
+              <XAxis
+                dataKey="name"
+                stroke="#888888"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="#888888"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}`}
+              />
+              <ChartTooltip />
+              <Bar
+                dataKey="deleted"
+                fill="currentColor"
+                radius={[4, 4, 0, 0]}
+                className="fill-red-500"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartContainer>
       </div>
 
       {/* Summary Stats */}
@@ -119,7 +133,7 @@ export default function DeletedFilesBarChart() {
           <div className="text-2xl font-bold text-gray-700">
             {deletedFiles.length > 0 ? Math.round(deletedFiles.reduce((sum, deleted) => sum + (deleted.count || 0), 0) / deletedFiles.length) : 0}
           </div>
-          <div className="text-xs text-gray-500">Daily Average</div>
+          <div className="text-xs text-gray-500">Weekly Average</div>
         </div>
       </div>
 

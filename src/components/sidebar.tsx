@@ -98,6 +98,11 @@ const menuGroups: MenuGroup[] = [
         icon: Shield,
       },
       {
+        title: "Companies",
+        href: "/companies",
+        icon: Building2,
+      },
+      {
         title: "Company Structure",
         href: "/company/structure",
         icon: Network,

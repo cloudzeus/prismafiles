@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/dashboard-layout"
 import RedisStatusCheck from "@/components/redis-status-check"
 import FileTypesPieChart from "@/components/charts/file-types-pie-chart"
 import ScannedDocumentsRadialChart from "@/components/charts/scanned-documents-radial-chart"
-import WeeklyUploadsBarChart from "@/components/charts/monthly-uploads-bar-chart"
+import WeeklyUploadsBarChart from "@/components/charts/weekly-uploads-bar-chart"
 import DeletedFilesBarChart from "@/components/charts/deleted-files-bar-chart"
 import GenerateFoldersButton from "@/components/generate-folders-button"
 
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
                 <BarChart3 className="h-5 w-5 text-purple-600" />
                 Weekly Uploads
               </CardTitle>
-              <CardDescription>Daily uploads over the current week</CardDescription>
+              <CardDescription>Daily uploads for the current week</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-[300px] flex items-center justify-center">
@@ -94,7 +94,7 @@ export default async function DashboardPage() {
                 <BarChart3 className="h-5 w-5 text-red-600" />
                 Deleted Files
               </CardTitle>
-              <CardDescription>Number of deleted files over time</CardDescription>
+              <CardDescription>Number of deleted files per week</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-[300px] flex items-center justify-center">

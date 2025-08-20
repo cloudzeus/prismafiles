@@ -75,10 +75,10 @@ module.exports = {
         },
       },
       fontSize: {
-        'xs': ['0.6865rem', { lineHeight: '1rem' }], // 11px
-        'sm': ['0.7625rem', { lineHeight: '1.25rem' }], // 13px
+        'xs': ['0.7265rem', { lineHeight: '1rem' }], // 11px
+        'sm': ['0.8025rem', { lineHeight: '1.25rem' }], // 13px
         'base': ['var(--font-size-base)', { lineHeight: '1.25rem' }], // 11px (default)
-        'lg': ['0.815rem', { lineHeight: '1.5rem' }], // 14px
+        'lg': ['0.825rem', { lineHeight: '1.5rem' }], // 14px
         'xl': ['1rem', { lineHeight: '1.75rem' }], // 16px
         '2xl': ['1.025rem', { lineHeight: '1.75rem' }], // 18px
         '3xl': ['1.15rem', { lineHeight: '2rem' }], // 20px

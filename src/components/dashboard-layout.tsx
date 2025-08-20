@@ -45,6 +45,11 @@ const menuItems = [
     ]
   },
   {
+    label: "Companies",
+    href: "/companies",
+    icon: <IconShield className="h-5 w-5" />
+  },
+  {
     label: "Files",
     href: "/files",
     icon: <IconFolder className="h-5 w-5" />
@@ -80,7 +85,13 @@ const menuItems = [
   {
     label: "Settings",
     href: "/settings",
-    icon: <IconSettings className="h-5 w-5" />
+    icon: <IconSettings className="h-5 w-5" />,
+    subItems: [
+      { label: "ERP Settings", href: "/settings/erp" },
+      { label: "User Settings", href: "/settings/users" },
+      { label: "GDPR Settings", href: "/settings/gdpr" },
+      { label: "System Settings", href: "/settings/system" }
+    ]
   }
 ];
 
