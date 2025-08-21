@@ -81,8 +81,14 @@ if (typeof window === 'undefined') {
         await redis.ping();
       } catch (error) {
         console.log('🏓 Redis health check failed, attempting reconnection...');
-        redis.disconnect();
-        redis.connect();
+        // Only reconnect if not already connecting/connected
+        if (redis.status === 'end' || redis.status === 'close') {
+          try {
+            await redis.connect();
+          } catch (connectError) {
+            console.error('❌ Failed to reconnect to Redis:', connectError);
+          }
+        }
       }
     }
   }, 30000); // Check every 30 seconds

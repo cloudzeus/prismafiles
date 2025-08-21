@@ -66,7 +66,7 @@ export default function AddUserModal({ isOpen, onClose, onCreated }: AddUserModa
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New User</DialogTitle>
           <DialogDescription>Create a new user account. You can assign a role now or later.</DialogDescription>

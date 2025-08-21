@@ -50,6 +50,15 @@ model User {
   
   // Department management relationships
   managedDepartments Department[] @relation("DepartmentManager")
+  
+  // Sharing relationships
+  sharedItems SharedItem[] @relation("SharedByUser")
+  sharedWithMe SharedItem[] @relation("SharedWithUser")
+  sharedFolders UserSharedFolder[]
+  
+  // GDPR compliance tracking
+  sharingAttempts SharingAttempt[]
+  gdprReports GdprReport[]
 
   @@map("users")
 }
@@ -174,9 +183,239 @@ model Company {
   concent    Boolean?  @default(false)     // kept original field name
   upddate    DateTime  @updatedAt @db.Timestamp(0)
 
+  // relations
+  contactCompanies ContactCompany[]
+
   @@map("companies")
   @@index([sodtype])
   @@index([afm])
   @@index([code])
   @@index([name])
+}
+
+/// CONTACTS
+model Contact {
+  id          Int               @id @default(autoincrement())
+  name        String            @db.VarChar(255)
+  title       String?           @db.VarChar(100)
+  description String?           @db.Text
+  phone       String?           @db.VarChar(30)
+  mobile      String?           @db.VarChar(30)
+  workPhone   String?           @db.VarChar(30)
+  email       String?           @db.VarChar(255)
+  address     String?           @db.VarChar(255)
+  city        String?           @db.VarChar(100)
+  zip         String?           @db.VarChar(10)
+  country     String?           @db.VarChar(2)
+
+  // relations
+  companies   ContactCompany[]
+  sharedItems SharedItem[]
+
+  @@map("contacts")
+  @@index([name])
+  @@index([email])
+}
+
+/// JUNCTION: CONTACTS ↔ COMPANIES
+model ContactCompany {
+  // composite PK
+  contactId   Int
+  companyId   Int
+
+  // extra fields on the association
+  position    String?  @db.VarChar(100)
+  description String?  @db.Text
+
+  // relations
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([contactId, companyId])
+  @@map("contactCompanies")
+  @@index([companyId])
+  @@index([contactId])
+}
+
+/// FILE AND FOLDER SHARING
+model SharedItem {
+  id          String      @id @default(cuid())
+  itemPath    String      // Full path to the file or folder
+  itemName    String      // Name of the file or folder
+  itemType    String      // 'file' or 'folder'
+  sharedBy    String      // ID of the user who shared the item
+  sharedAt    DateTime    @default(now())
+  expiresAt   DateTime?   // Optional expiration date
+  isActive    Boolean     @default(true)
+  
+  // Sharing type: 'user' for user sharing, 'contact' for contact sharing
+  sharingType String      // 'user' or 'contact'
+  
+  // For user sharing
+  sharedWithUserId String? // ID of the user the item is shared with
+  
+  // For contact sharing
+  sharedWithContactId Int?  // ID of the contact the item is shared with
+  shareLink          String? // Unique sharing link for contacts
+  shareLinkExpiresAt DateTime? // When the share link expires
+  
+  // Relations
+  sharedByUser       User        @relation("SharedByUser", fields: [sharedBy], references: [id], onDelete: Cascade)
+  sharedWithUser     User?       @relation("SharedWithUser", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+  sharedWithContact  Contact?    @relation(fields: [sharedWithContactId], references: [id], onDelete: Cascade)
+  
+  // Permissions
+  canView    Boolean @default(true)
+  canDownload Boolean @default(true)
+  canEdit    Boolean @default(false)
+  canDelete  Boolean @default(false)
+  
+  // Metadata
+  description String? // Optional description of what's being shared
+  
+  @@map("shared_items")
+  @@index([itemPath])
+  @@index([sharedBy])
+  @@index([sharedWithUserId])
+  @@index([sharedWithContactId])
+  @@index([shareLink])
+  @@index([isActive])
+}
+
+/// USER SHARED FOLDERS
+model UserSharedFolder {
+  id          String   @id @default(cuid())
+  userId      String   // ID of the user who owns this shared folder
+  folderPath  String   // Path to the shared folder
+  folderName  String   // Name of the shared folder
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, folderPath])
+  @@map("user_shared_folders")
+  @@index([userId])
+  @@index([folderPath])
+}
+
+/// GDPR COMPLIANCE AND FILE SCANNING
+model FileScanResult {
+  id          String   @id @default(cuid())
+  filePath    String   // Full path to the scanned file
+  fileName    String   // Name of the file
+  scanDate    DateTime @default(now())
+  scanStatus  String   // 'pending', 'scanning', 'completed', 'failed'
+  
+  // GDPR Detection Results
+  hasPersonalData Boolean @default(false)
+  personalDataTypes String @db.Text // JSON string of detected personal data types
+  riskLevel       String   // 'low', 'medium', 'high', 'critical'
+  
+  // File Analysis
+  fileType       String?  // Detected file type
+  fileSize       Int?     // File size in bytes
+  contentHash    String?  // Hash of file content for change detection
+  
+  // Scan Details
+  scanDuration   Int?     // Scan duration in milliseconds
+  scanErrors     String?  // Any errors during scanning
+  scanVersion   String    // Version of scanning algorithm used
+  
+  // Relations
+  sharingAttempts SharingAttempt[]
+  
+  @@map("file_scan_results")
+  @@index([filePath])
+  @@index([scanDate])
+  @@index([hasPersonalData])
+  @@index([riskLevel])
+}
+
+/// SHARING ATTEMPTS TRACKING
+model SharingAttempt {
+  id          String   @id @default(cuid())
+  userId      String   // ID of the user attempting to share
+  itemPath    String   // Path to the item being shared
+  itemName    String   // Name of the item
+  itemType    String   // 'file' or 'folder'
+  attemptDate DateTime @default(now())
+  
+  // Sharing Details
+  sharingType String   // 'user' or 'contact'
+  targetId    String   // ID of target user or contact
+  targetType  String   // 'user' or 'contact'
+  
+  // GDPR Compliance
+  gdprCompliant Boolean @default(false)
+  blockedReason String? // Reason if sharing was blocked
+  
+  // File Scan Results
+  fileScanResultId String? // Link to file scan result
+  scanRequired    Boolean @default(false)
+  scanCompleted   Boolean @default(false)
+  
+  // User Actions
+  userAcknowledged Boolean @default(false) // User acknowledged GDPR warning
+  userJustification String? // User's reason for sharing despite warnings
+  
+  // Audit Trail
+  ipAddress    String? // User's IP address
+  userAgent    String? // User's browser/device info
+  sessionId    String? // User's session ID
+  
+  // Relations
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileScanResult FileScanResult? @relation(fields: [fileScanResultId], references: [id])
+  
+  @@map("sharing_attempts")
+  @@index([userId])
+  @@index([attemptDate])
+  @@index([gdprCompliant])
+  @@index([itemPath])
+}
+
+/// GDPR PERSONAL DATA PATTERNS
+model GdprPattern {
+  id          String   @id @default(cuid())
+  name        String   // Pattern name (e.g., "Email Address", "Phone Number")
+  description String   // Description of what this pattern detects
+  pattern     String   // Regex pattern for detection
+  riskLevel   String   // 'low', 'medium', 'high', 'critical'
+  category    String   // 'contact', 'financial', 'health', 'identification', 'other'
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("gdpr_patterns")
+  @@index([category])
+  @@index([riskLevel])
+  @@index([isActive])
+}
+
+/// GDPR COMPLIANCE REPORTS
+model GdprReport {
+  id          String   @id @default(cuid())
+  reportType  String   // 'daily', 'weekly', 'monthly', 'custom'
+  startDate   DateTime
+  endDate     DateTime
+  generatedAt DateTime @default(now())
+  generatedBy String   // User ID who generated the report
+  
+  // Report Content (stored as JSON)
+  reportData  Json     // Detailed report data
+  
+  // Report Status
+  status      String   // 'generating', 'completed', 'failed'
+  filePath    String?  // Path to generated report file
+  
+  // Relations
+  user        User     @relation(fields: [generatedBy], references: [id], onDelete: Cascade)
+  
+  @@map("gdpr_reports")
+  @@index([reportType])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([generatedBy])
 }

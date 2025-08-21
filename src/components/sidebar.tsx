@@ -19,7 +19,11 @@ import {
   UserCheck,
   Building,
   Cog,
-  Home
+  Home,
+  Contact,
+  FolderOpen,
+  Share2,
+  ClipboardList
 } from "lucide-react"
 
 interface SidebarProps {
@@ -50,6 +54,16 @@ const menuGroups: MenuGroup[] = [
         icon: LayoutDashboard,
       },
       {
+        title: "Files",
+        href: "/files",
+        icon: FolderOpen,
+      },
+      {
+        title: "Shared Items",
+        href: "/shared",
+        icon: Share2,
+      },
+      {
         title: "My Profile",
         href: "/users/profile",
         icon: UserCheck,
@@ -57,29 +71,28 @@ const menuGroups: MenuGroup[] = [
     ],
   },
   {
-    title: "User Management",
+    title: "Users",
     icon: Users,
     items: [
       {
-        title: "All Users",
+        title: "User Management",
         href: "/users",
         icon: Users,
-        badge: "New",
       },
       {
-        title: "User Roles",
-        href: "/users/roles",
+        title: "Departments",
+        href: "/users/departments",
+        icon: Building,
+      },
+      {
+        title: "Department Roles",
+        href: "/users/department-roles",
         icon: Shield,
       },
       {
-        title: "User Permissions",
-        href: "/users/permissions",
-        icon: UserCheck,
-      },
-      {
-        title: "User Groups",
-        href: "/users/groups",
-        icon: FileText,
+        title: "Company Structure",
+        href: "/users/company-structure",
+        icon: Network,
       },
     ],
   },
@@ -88,24 +101,15 @@ const menuGroups: MenuGroup[] = [
     icon: Building2,
     items: [
       {
-        title: "Departments",
-        href: "/departments",
-        icon: Building,
-      },
-      {
-        title: "Department Roles",
-        href: "/departments/roles",
-        icon: Shield,
-      },
-      {
         title: "Companies",
         href: "/companies",
         icon: Building2,
       },
       {
-        title: "Company Structure",
-        href: "/company/structure",
-        icon: Network,
+        title: "Contacts",
+        href: "/contacts",
+        icon: Users,
+        badge: "New",
       },
     ],
   },
@@ -119,14 +123,19 @@ const menuGroups: MenuGroup[] = [
         icon: Cog,
       },
       {
-        title: "System Configuration",
-        href: "/settings/system",
+        title: "ERP Settings",
+        href: "/settings/erp",
         icon: Settings,
       },
       {
-        title: "Security Settings",
-        href: "/settings/security",
-        icon: Shield,
+        title: "GDPR Reports",
+        href: "/gdpr-reports",
+        icon: ClipboardList,
+      },
+      {
+        title: "Redis Test",
+        href: "/redis-test",
+        icon: Cog,
       },
     ],
   },
@@ -135,7 +144,7 @@ const menuGroups: MenuGroup[] = [
 export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname()
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
-    "User Management": true,
+    "Users": true,
     "Organization": true,
     "System": true,
   })

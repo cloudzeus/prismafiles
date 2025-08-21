@@ -13,7 +13,8 @@ import {
   IconFileUpload,
   IconFolder,
   IconShieldCheck,
-  IconKey
+  IconKey,
+  IconAddressBook
 } from "@tabler/icons-react";
 import { getCurrentUser } from "@/lib/auth-utils";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,11 @@ const menuItems = [
     icon: <IconShield className="h-5 w-5" />
   },
   {
+    label: "Contacts",
+    href: "/contacts",
+    icon: <IconAddressBook className="h-5 w-5" />
+  },
+  {
     label: "Files",
     href: "/files",
     icon: <IconFolder className="h-5 w-5" />
@@ -61,15 +67,8 @@ const menuItems = [
   },
   {
     label: "GDPR Compliance",
-    href: "/gdpr",
+    href: "/gdpr-reports",
     icon: <IconShieldCheck className="h-5 w-5" />,
-    subItems: [
-      { label: "Data Processing", href: "/gdpr/data-processing" },
-      { label: "Consent Management", href: "/gdpr/consent" },
-      { label: "Data Subject Rights", href: "/gdpr/subject-rights" },
-      { label: "Data Breach Log", href: "/gdpr/breach-log" },
-      { label: "Compliance Reports", href: "/gdpr/reports" }
-    ]
   },
   {
     label: "API Keys",

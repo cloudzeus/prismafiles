@@ -23,7 +23,7 @@ export default function LicenseModal({ open, onOpenChange }: LicenseModalProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl rounded-2xl p-6 overflow-y-auto max-h-[90vh]">
+      <DialogContent className="max-w-2xl rounded-2xl p-6 overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-center">
             License Agreement – G-FILES

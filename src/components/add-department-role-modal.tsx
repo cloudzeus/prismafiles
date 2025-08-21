@@ -108,7 +108,7 @@ export default function AddDepartmentRoleModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Department Role</DialogTitle>
           <DialogDescription>

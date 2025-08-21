@@ -10,6 +10,7 @@ import {
   FileText, Image, Video, Music, Archive, Code, FileImage, FileVideo, 
   FileAudio, FileArchive, FileCode, FileSpreadsheet, Presentation
 } from 'lucide-react'
+import ShareItemModal from './share-item-modal'
 import { useRouter } from 'next/navigation'
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb'
 
@@ -61,6 +62,8 @@ export default function FilesBrowser({ user }: FilesBrowserProps) {
   const [newFolderName, setNewFolderName] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<ItemType | null>(null)
   const [stats, setStats] = useState({
     totalFiles: 0,
     totalFolders: 0,
@@ -722,6 +725,23 @@ export default function FilesBrowser({ user }: FilesBrowserProps) {
                         </div>
                       )}
                       
+                      {viewMode === 'grid' && (
+                        <div className="flex justify-center mt-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="p-1 h-6 w-6" 
+                            onClick={() => {
+                              setSelectedItem(item)
+                              setShowShareModal(true)
+                            }}
+                            title="Share"
+                          >
+                            <Share className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                      
                       <div className={viewMode === 'grid' ? 'text-center' : 'min-w-0'}>
                         <h4 className={`font-medium ${viewMode === 'grid' ? 'text-sm' : 'text-base'} truncate`}>
                           {item.name}
@@ -737,14 +757,30 @@ export default function FilesBrowser({ user }: FilesBrowserProps) {
                       </div>
                     </div>
                     
-                    {viewMode !== 'grid' && item.type === 'file' && (
+                    {viewMode !== 'grid' && (
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" className="p-1 h-6 w-6" onClick={() => handleFileDownload(item.path)}>
-                          <Download className="h-3 w-3" />
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="p-1 h-6 w-6" 
+                          onClick={() => {
+                            setSelectedItem(item)
+                            setShowShareModal(true)
+                          }}
+                          title="Share"
+                        >
+                          <Share className="h-3 w-3" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="p-1 h-6 w-6" onClick={() => handleFileDelete(item.path)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        {item.type === 'file' && (
+                          <>
+                            <Button variant="ghost" size="sm" className="p-1 h-6 w-6" onClick={() => handleFileDownload(item.path)}>
+                              <Download className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="p-1 h-6 w-6" onClick={() => handleFileDelete(item.path)}>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
@@ -842,6 +878,24 @@ export default function FilesBrowser({ user }: FilesBrowserProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Share Item Modal */}
+      {showShareModal && selectedItem && (
+        <ShareItemModal
+          open={showShareModal}
+          onOpenChange={setShowShareModal}
+          item={{
+            name: selectedItem.name,
+            path: selectedItem.path,
+            type: selectedItem.type
+          }}
+          currentUser={{
+            id: user.id,
+            name: user.name || null,
+            email: user.email
+          }}
+        />
       )}
     </div>
   )
